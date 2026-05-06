@@ -3,7 +3,7 @@
 
 [submodule "backend"]
 	path = backend
-	url = ./backend
+	url = https://github.com/SquareBracket-GitHub/highlog-backend.git
 
 [submodule "frontend"]
 	path = frontend
