@@ -21,7 +21,7 @@ create table courses (
     "period": "3"
 }]
 */
-SELECT * FROM students WHERE day LIKE '%M%'; 
+-- SELECT * FROM students WHERE day LIKE '%M%'; 
 
 create table enrolments (
     student_idx INT NOT NULL,
