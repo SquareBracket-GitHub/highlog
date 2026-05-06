@@ -1,0 +1,10 @@
+# Git submodule configuration file
+# backend와 frontend는 각각 서브모듈로 설정된 Git 저장소입니다.
+
+[submodule "backend"]
+	path = backend
+	url = ./backend
+
+[submodule "frontend"]
+	path = frontend
+	url = ./frontend
