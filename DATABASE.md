@@ -24,10 +24,10 @@
   ```json
   [{
       "day": "월요일",
-      "period": "3"
+      "period": 3
   }, {
       "day": "화요일",
-      "period": "3"
+      "period": 3
   }]
   ```
 
