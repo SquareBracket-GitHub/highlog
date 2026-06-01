@@ -11,6 +11,8 @@
 - `grade` INT NOT NULL COMMENT '학년'
 - `class_no` INT NOT NULL COMMENT '반'
 - `school_number` INT NOT NULL COMMENT '학번'
+ - `login_id` VARCHAR(50) UNIQUE NOT NULL COMMENT '로그인 아이디'
+ - `password` VARCHAR(255) NOT NULL COMMENT '비밀번호(해시 저장)'
 
 ### courses
 

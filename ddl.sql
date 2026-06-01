@@ -37,3 +37,7 @@ create table enrolments (
 --     period INT NOT NULL COMMENT '교시',
 --     FOREIGN KEY (course_id) REFERENCES courses (id)
 -- );
+
+ALTER TABLE students
+ADD COLUMN login_id VARCHAR(50) UNIQUE NOT NULL,
+ADD COLUMN password VARCHAR(255) NOT NULL;
