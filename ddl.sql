@@ -41,3 +41,6 @@ create table enrolments (
 ALTER TABLE students
 ADD COLUMN login_id VARCHAR(50) UNIQUE NOT NULL,
 ADD COLUMN password VARCHAR(255) NOT NULL;
+
+ALTER TABLE students
+RENAME COLUMN class TO class_no;
