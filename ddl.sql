@@ -19,7 +19,7 @@ CREATE TABLE courses (
 
     days JSON NOT NULL COMMENT '수업 일정'
     /*
-    예시:
+    example:
     [
       {
         "day": "월요일",
@@ -45,4 +45,20 @@ CREATE TABLE enrolments (
 
     FOREIGN KEY (course_id)
         REFERENCES courses(id)
+);
+
+CREATE TABLE schedules (
+    course_id INT NOT NULL PRIMARY KEY,
+    title VARCHAR(50) NOT NULL COMMENT '수행 제목',
+    schedule_content VARCHAR(1000) NOT NULL COMMENT '수행 내용',
+    day_info JSON NOT NULL COMMENT '날짜 정보',
+    /*
+    {
+      "day": "월요일",
+      "date": Time
+    }
+    */
+
+    FOREIGN (course_id)
+      REFERENCES courses(id)
 );
