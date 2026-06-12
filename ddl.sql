@@ -48,6 +48,7 @@ CREATE TABLE enrolments (
 );
 
 CREATE TABLE schedules (
+    id INT AUTO_INCREMENT PRIMARY KEY,
     course_id INT NOT NULL PRIMARY KEY,
     title VARCHAR(50) NOT NULL COMMENT '수행 제목',
     schedule_content VARCHAR(1000) NOT NULL COMMENT '수행 내용',
@@ -61,4 +62,4 @@ CREATE TABLE schedules (
 
     FOREIGN (course_id)
       REFERENCES courses(id)
-);
+) AUTO_INCREMENT = 100;
