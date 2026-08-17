@@ -74,12 +74,13 @@
 | period | INT | NOT NULL | 교시 |
 | label | VARCHAR(80) | NOT NULL | 선택 전 또는 고정 슬롯에 표시할 이름 |
 | tag | VARCHAR(30) | NULL | 선택 과목과 연결할 태그. NULL이면 고정 슬롯 |
+| course_id | INT | NULL, FOREIGN KEY | 고정 슬롯에 직접 연결된 과목 ID. 선택 슬롯이면 NULL |
 
 `UNIQUE (grade, class_no, day, period)`로 동일 시간의 중복 슬롯을 막습니다.
 
 동작 규칙:
 
-- `tag IS NULL`: `label`을 고정 과목명으로 표시합니다.
+- `course_id IS NOT NULL`: 연결된 과목을 고정 과목으로 표시하고 회원가입 시 자동 수강 등록합니다.
 - `tag IS NOT NULL`: 학생이 같은 `courses.tag`에서 선택한 과목의 이름과 강의실을 표시합니다.
 - 해당 태그에서 아직 선택하지 않았다면 `label`을 자리표시자로 표시합니다.
 - 학생의 반 정보는 로그인 토큰의 학생 ID로 조회하므로 프론트가 다른 반 번호를 지정하지 않습니다.
@@ -87,9 +88,11 @@
 예시:
 
 ```sql
-INSERT INTO class_timetable_slots (grade, class_no, day, period, label, tag) VALUES
-  (1, 1, '월요일', 1, '국어', NULL),
-  (1, 1, '월요일', 2, '선택 A', '선택 A');
+INSERT INTO class_timetable_slots
+  (grade, class_no, day, period, label, tag, course_id)
+VALUES
+  (1, 1, '월요일', 1, '국어', NULL, 100),
+  (1, 1, '월요일', 2, '진로 A', '진로 A', NULL);
 ```
 
 ---
@@ -102,12 +105,15 @@ INSERT INTO class_timetable_slots (grade, class_no, day, period, label, tag) VAL
 |---------|---------|---------|---------|
 | student_id | INT | NOT NULL | 학생 ID |
 | course_id | INT | NOT NULL | 과목 ID |
+| source | ENUM('fixed', 'selected') | NOT NULL | 자동 등록된 고정 과목인지 직접 선택한 과목인지 구분 |
 
 제약 조건:
 
 - FOREIGN KEY (`student_id`) REFERENCES `students`(`id`)
 - FOREIGN KEY (`course_id`) REFERENCES `courses`(`id`)
 - UNIQUE KEY (`student_id`, `course_id`)
+
+`source='fixed'`인 수강 정보는 반별 시간표에서 자동 생성되며 수강신청 API로 삭제되지 않습니다.
 
 ---
 

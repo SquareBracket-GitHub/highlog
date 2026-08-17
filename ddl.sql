@@ -49,11 +49,20 @@ CREATE TABLE IF NOT EXISTS class_timetable_slots (
     period INT NOT NULL COMMENT '교시',
     label VARCHAR(80) NOT NULL COMMENT '고정 과목명 또는 선택 전 표시 이름',
     tag VARCHAR(30) NULL COMMENT '선택 과목 연결 태그; NULL이면 고정 슬롯',
+    course_id INT NULL COMMENT '고정 슬롯에 직접 연결된 과목 ID; 선택 슬롯이면 NULL',
 
     -- 같은 반의 동일 요일/교시에 슬롯이 중복되지 않도록 합니다.
     UNIQUE KEY uq_class_slot (grade, class_no, day, period),
     -- 로그인한 학생의 학년/반 시간표 조회를 빠르게 합니다.
-    INDEX idx_class_slot_lookup (grade, class_no)
+    INDEX idx_class_slot_lookup (grade, class_no),
+    INDEX idx_class_slot_course (course_id),
+    CONSTRAINT fk_class_slot_course
+        FOREIGN KEY (course_id) REFERENCES courses (id),
+    -- 고정 슬롯(course_id)과 선택 슬롯(tag) 중 정확히 하나만 지정합니다.
+    CONSTRAINT chk_class_slot_type CHECK (
+        (course_id IS NOT NULL AND tag IS NULL)
+        OR (course_id IS NULL AND tag IS NOT NULL)
+    )
 ) ENGINE = InnoDB
   DEFAULT CHARACTER SET = utf8mb4
   COLLATE = utf8mb4_unicode_ci
@@ -63,6 +72,8 @@ CREATE TABLE IF NOT EXISTS class_timetable_slots (
 CREATE TABLE IF NOT EXISTS enrolments (
     student_id INT NOT NULL COMMENT '학생 ID',
     course_id INT NOT NULL COMMENT '과목 ID',
+    source ENUM('fixed', 'selected') NOT NULL DEFAULT 'selected'
+        COMMENT 'fixed: 반 시간표 자동 등록, selected: 학생 수강신청',
 
     PRIMARY KEY (student_id, course_id),
     CONSTRAINT fk_enrolments_student
@@ -74,12 +85,19 @@ CREATE TABLE IF NOT EXISTS enrolments (
   COLLATE = utf8mb4_unicode_ci
   COMMENT = '학생별 수강 과목';
 
+-- 고정 시간표에 직접 연결할 1학년 1반 과목 예시입니다.
+-- 고정 과목도 enrolments에 저장되지만 수강신청 화면에는 노출되지 않습니다.
+INSERT IGNORE INTO courses (id, title, tag, classroom, days)
+VALUES
+    (100, '국어', '필수-1-1-국어', '1-1 교실', JSON_ARRAY(JSON_OBJECT('day', '월요일', 'period', 1))),
+    (101, '수학', '필수-1-1-수학', '1-1 교실', JSON_ARRAY(JSON_OBJECT('day', '월요일', 'period', 3)));
+
 -- 1학년 1반 시간표 예시입니다.
 -- INSERT IGNORE를 사용하므로 이 파일을 다시 실행해도 기존 슬롯은 중복되지 않습니다.
 INSERT IGNORE INTO class_timetable_slots
-    (grade, class_no, day, period, label, tag)
+    (grade, class_no, day, period, label, tag, course_id)
 VALUES
-    (1, 1, '월요일', 1, '국어', NULL),
-    (1, 1, '월요일', 2, '선택 A', '선택 A'),
-    (1, 1, '월요일', 3, '수학', NULL),
-    (1, 1, '화요일', 1, '선택 B', '선택 B');
+    (1, 1, '월요일', 1, '국어', NULL, 100),
+    (1, 1, '월요일', 2, '진로 A', '진로 A', NULL),
+    (1, 1, '월요일', 3, '수학', NULL, 101),
+    (1, 1, '화요일', 1, '진로 B', '진로 B', NULL);
