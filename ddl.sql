@@ -17,7 +17,9 @@ CREATE TABLE IF NOT EXISTS students (
     password VARCHAR(255) NOT NULL COMMENT '비밀번호 해시',
     grade INT NOT NULL COMMENT '학년',
     class_no INT NOT NULL COMMENT '반',
-    school_number INT NOT NULL COMMENT '학번'
+    school_number INT NOT NULL COMMENT '학번',
+    can_manage_courses BOOLEAN NOT NULL DEFAULT FALSE COMMENT '과목 관리 권한',
+    UNIQUE KEY uq_student_school_number (grade, class_no, school_number)
 ) ENGINE = InnoDB
   DEFAULT CHARACTER SET = utf8mb4
   COLLATE = utf8mb4_unicode_ci
@@ -29,9 +31,15 @@ CREATE TABLE IF NOT EXISTS students (
 CREATE TABLE IF NOT EXISTS courses (
     id INT AUTO_INCREMENT PRIMARY KEY COMMENT '과목 고유 ID',
     title VARCHAR(80) NOT NULL COMMENT '과목명',
-    tag VARCHAR(30) NOT NULL COMMENT '과목 선택 그룹 태그',
+    tag VARCHAR(30) NULL COMMENT '과목 선택 그룹 태그; 반 공통 과목은 NULL',
     classroom VARCHAR(50) NOT NULL COMMENT '강의실',
-    days JSON NOT NULL COMMENT '수업 일정 [{"day":"월요일","period":3}]'
+    days JSON NOT NULL COMMENT '수업 일정 [{"day":"월요일","period":3}]',
+    grade INT NOT NULL COMMENT '대상 학년',
+    class_no INT NOT NULL COMMENT '대상 반',
+    day VARCHAR(10) NOT NULL COMMENT '요일',
+    period INT NOT NULL COMMENT '교시',
+    color CHAR(7) NOT NULL DEFAULT '#FFFFFF' COMMENT '시간표 표시 색상',
+    is_class_wide BOOLEAN NOT NULL DEFAULT FALSE COMMENT '반 전체 공통 과목 여부'
 ) ENGINE = InnoDB
   DEFAULT CHARACTER SET = utf8mb4
   COLLATE = utf8mb4_unicode_ci
@@ -87,10 +95,11 @@ CREATE TABLE IF NOT EXISTS enrolments (
 
 -- 고정 시간표에 직접 연결할 1학년 1반 과목 예시입니다.
 -- 고정 과목도 enrolments에 저장되지만 수강신청 화면에는 노출되지 않습니다.
-INSERT IGNORE INTO courses (id, title, tag, classroom, days)
+INSERT IGNORE INTO courses
+    (id, title, tag, classroom, days, grade, class_no, day, period, color, is_class_wide)
 VALUES
-    (100, '국어', '필수-1-1-국어', '1-1 교실', JSON_ARRAY(JSON_OBJECT('day', '월요일', 'period', 1))),
-    (101, '수학', '필수-1-1-수학', '1-1 교실', JSON_ARRAY(JSON_OBJECT('day', '월요일', 'period', 3)));
+    (100, '국어', NULL, '1-1 교실', JSON_ARRAY(JSON_OBJECT('day', '월요일', 'period', 1)), 1, 1, '월요일', 1, '#BBF7D0', TRUE),
+    (101, '수학', NULL, '1-1 교실', JSON_ARRAY(JSON_OBJECT('day', '월요일', 'period', 3)), 1, 1, '월요일', 3, '#FDE68A', TRUE);
 
 -- 1학년 1반 시간표 예시입니다.
 -- INSERT IGNORE를 사용하므로 이 파일을 다시 실행해도 기존 슬롯은 중복되지 않습니다.
