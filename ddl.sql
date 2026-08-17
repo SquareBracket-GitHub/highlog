@@ -35,7 +35,7 @@ CREATE TABLE IF NOT EXISTS courses (
     classroom VARCHAR(50) NOT NULL COMMENT '강의실',
     days JSON NOT NULL COMMENT '수업 일정 [{"day":"월요일","period":3}]',
     grade INT NOT NULL COMMENT '대상 학년',
-    class_no INT NOT NULL COMMENT '대상 반',
+    class_no INT NULL COMMENT '대상 반; 선택과목은 NULL',
     day VARCHAR(10) NOT NULL COMMENT '요일',
     period INT NOT NULL COMMENT '교시',
     color CHAR(7) NOT NULL DEFAULT '#FFFFFF' COMMENT '시간표 표시 색상',
@@ -52,7 +52,8 @@ CREATE TABLE IF NOT EXISTS courses (
 CREATE TABLE IF NOT EXISTS class_timetable_slots (
     id INT AUTO_INCREMENT PRIMARY KEY COMMENT '시간표 슬롯 ID',
     grade INT NOT NULL COMMENT '학년',
-    class_no INT NOT NULL COMMENT '반',
+    class_no INT NULL COMMENT '반; 학년 공통 선택 슬롯은 NULL',
+    class_scope INT GENERATED ALWAYS AS (IFNULL(class_no, 0)) STORED COMMENT 'NULL 반의 고유키 처리용',
     day VARCHAR(10) NOT NULL COMMENT '요일(예: 월요일)',
     period INT NOT NULL COMMENT '교시',
     label VARCHAR(80) NOT NULL COMMENT '고정 과목명 또는 선택 전 표시 이름',
@@ -60,7 +61,7 @@ CREATE TABLE IF NOT EXISTS class_timetable_slots (
     course_id INT NULL COMMENT '고정 슬롯에 직접 연결된 과목 ID; 선택 슬롯이면 NULL',
 
     -- 같은 반의 동일 요일/교시에 슬롯이 중복되지 않도록 합니다.
-    UNIQUE KEY uq_class_slot (grade, class_no, day, period),
+    UNIQUE KEY uq_class_slot (grade, class_scope, day, period),
     -- 로그인한 학생의 학년/반 시간표 조회를 빠르게 합니다.
     INDEX idx_class_slot_lookup (grade, class_no),
     INDEX idx_class_slot_course (course_id),
@@ -107,6 +108,6 @@ INSERT IGNORE INTO class_timetable_slots
     (grade, class_no, day, period, label, tag, course_id)
 VALUES
     (1, 1, '월요일', 1, '국어', NULL, 100),
-    (1, 1, '월요일', 2, '진로 A', '진로 A', NULL),
+    (1, NULL, '월요일', 2, '진로 A', '진로 A', NULL),
     (1, 1, '월요일', 3, '수학', NULL, 101),
-    (1, 1, '화요일', 1, '진로 B', '진로 B', NULL);
+    (1, NULL, '화요일', 1, '진로 B', '진로 B', NULL);
