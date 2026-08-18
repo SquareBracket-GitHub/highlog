@@ -39,7 +39,10 @@ CREATE TABLE IF NOT EXISTS courses (
     day VARCHAR(10) NOT NULL COMMENT '요일',
     period INT NOT NULL COMMENT '교시',
     color CHAR(7) NOT NULL DEFAULT '#FFFFFF' COMMENT '시간표 표시 색상',
-    is_class_wide BOOLEAN NOT NULL DEFAULT FALSE COMMENT '반 전체 공통 과목 여부'
+    is_class_wide BOOLEAN NOT NULL DEFAULT FALSE COMMENT '반 전체 공통 과목 여부',
+    created_by_student_id INT NULL COMMENT '과목을 추가한 관리자 학생 ID',
+    INDEX idx_course_owner (created_by_student_id),
+    CONSTRAINT fk_course_owner FOREIGN KEY (created_by_student_id) REFERENCES students (id) ON DELETE SET NULL
 ) ENGINE = InnoDB
   DEFAULT CHARACTER SET = utf8mb4
   COLLATE = utf8mb4_unicode_ci
@@ -64,6 +67,7 @@ CREATE TABLE IF NOT EXISTS class_timetable_slots (
     UNIQUE KEY uq_class_slot (grade, class_scope, day, period),
     -- 로그인한 학생의 학년/반 시간표 조회를 빠르게 합니다.
     INDEX idx_class_slot_lookup (grade, class_no),
+    INDEX idx_class_slot_conflict (grade, day, period, class_no),
     INDEX idx_class_slot_course (course_id),
     CONSTRAINT fk_class_slot_course
         FOREIGN KEY (course_id) REFERENCES courses (id),
@@ -94,6 +98,9 @@ CREATE TABLE IF NOT EXISTS enrolments (
   COLLATE = utf8mb4_unicode_ci
   COMMENT = '학생별 수강 과목';
 
+DROP TRIGGER IF EXISTS bi_class_slot_scope_conflict;
+DROP TRIGGER IF EXISTS bu_class_slot_scope_conflict;
+
 -- 고정 시간표에 직접 연결할 1학년 1반 과목 예시입니다.
 -- 고정 과목도 enrolments에 저장되지만 수강신청 화면에는 노출되지 않습니다.
 INSERT IGNORE INTO courses
@@ -111,3 +118,21 @@ VALUES
     (1, NULL, '월요일', 2, '진로 A', '진로 A', NULL),
     (1, 1, '월요일', 3, '수학', NULL, 101),
     (1, NULL, '화요일', 1, '진로 B', '진로 B', NULL);
+
+-- 학년 공통 선택 슬롯과 같은 학년의 반 전용 슬롯이 겹치지 않도록 DB에서도 차단합니다.
+DELIMITER //
+CREATE TRIGGER bi_class_slot_scope_conflict BEFORE INSERT ON class_timetable_slots FOR EACH ROW
+BEGIN
+    IF (NEW.class_no IS NULL AND EXISTS (SELECT 1 FROM class_timetable_slots WHERE grade=NEW.grade AND day=NEW.day AND period=NEW.period))
+       OR (NEW.class_no IS NOT NULL AND EXISTS (SELECT 1 FROM class_timetable_slots WHERE grade=NEW.grade AND day=NEW.day AND period=NEW.period AND class_no IS NULL)) THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='Grade-wide and class-specific timetable slots conflict';
+    END IF;
+END//
+CREATE TRIGGER bu_class_slot_scope_conflict BEFORE UPDATE ON class_timetable_slots FOR EACH ROW
+BEGIN
+    IF (NEW.class_no IS NULL AND EXISTS (SELECT 1 FROM class_timetable_slots WHERE id<>OLD.id AND grade=NEW.grade AND day=NEW.day AND period=NEW.period))
+       OR (NEW.class_no IS NOT NULL AND EXISTS (SELECT 1 FROM class_timetable_slots WHERE id<>OLD.id AND grade=NEW.grade AND day=NEW.day AND period=NEW.period AND class_no IS NULL)) THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='Grade-wide and class-specific timetable slots conflict';
+    END IF;
+END//
+DELIMITER ;
