@@ -1,6 +1,9 @@
 data/
+backups/
 .env
 package-lock.json
 
 *.txt
 .vscode/
+scripts/
+migrations/

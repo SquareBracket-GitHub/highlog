@@ -37,12 +37,13 @@ CREATE TABLE IF NOT EXISTS courses (
     grade INT NOT NULL COMMENT '대상 학년',
     class_no INT NULL COMMENT '대상 반; 선택과목은 NULL',
     day VARCHAR(10) NOT NULL COMMENT '요일',
-    period INT NOT NULL COMMENT '교시',
+    period INT NOT NULL COMMENT '교시(1~7)',
     color CHAR(7) NOT NULL DEFAULT '#FFFFFF' COMMENT '시간표 표시 색상',
     is_class_wide BOOLEAN NOT NULL DEFAULT FALSE COMMENT '반 전체 공통 과목 여부',
     created_by_student_id INT NULL COMMENT '과목을 추가한 관리자 학생 ID',
     INDEX idx_course_owner (created_by_student_id),
-    CONSTRAINT fk_course_owner FOREIGN KEY (created_by_student_id) REFERENCES students (id) ON DELETE SET NULL
+    CONSTRAINT fk_course_owner FOREIGN KEY (created_by_student_id) REFERENCES students (id) ON DELETE SET NULL,
+    CONSTRAINT chk_course_period CHECK (period BETWEEN 1 AND 7)
 ) ENGINE = InnoDB
   DEFAULT CHARACTER SET = utf8mb4
   COLLATE = utf8mb4_unicode_ci
@@ -58,7 +59,7 @@ CREATE TABLE IF NOT EXISTS class_timetable_slots (
     class_no INT NULL COMMENT '반; 학년 공통 선택 슬롯은 NULL',
     class_scope INT GENERATED ALWAYS AS (IFNULL(class_no, 0)) STORED COMMENT 'NULL 반의 고유키 처리용',
     day VARCHAR(10) NOT NULL COMMENT '요일(예: 월요일)',
-    period INT NOT NULL COMMENT '교시',
+    period INT NOT NULL COMMENT '교시(1~7)',
     label VARCHAR(80) NOT NULL COMMENT '고정 과목명 또는 선택 전 표시 이름',
     tag VARCHAR(30) NULL COMMENT '선택 과목 연결 태그; NULL이면 고정 슬롯',
     course_id INT NULL COMMENT '고정 슬롯에 직접 연결된 과목 ID; 선택 슬롯이면 NULL',
@@ -75,7 +76,8 @@ CREATE TABLE IF NOT EXISTS class_timetable_slots (
     CONSTRAINT chk_class_slot_type CHECK (
         (course_id IS NOT NULL AND tag IS NULL)
         OR (course_id IS NULL AND tag IS NOT NULL)
-    )
+    ),
+    CONSTRAINT chk_class_slot_period CHECK (period BETWEEN 1 AND 7)
 ) ENGINE = InnoDB
   DEFAULT CHARACTER SET = utf8mb4
   COLLATE = utf8mb4_unicode_ci

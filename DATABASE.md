@@ -40,7 +40,7 @@
 | title | VARCHAR(80) | NOT NULL | 과목명 |
 | tag | VARCHAR(30) | NOT NULL | 과목 선택 그룹 태그. 같은 태그에서는 한 과목만 선택 가능 |
 | classroom | VARCHAR(50) | NOT NULL | 강의실 |
-| days | JSON | NOT NULL | 수업 일정 |
+| days | JSON | NOT NULL | 수업 일정(월~금, 1~7교시) |
 
 초기 AUTO_INCREMENT 값: `100`
 
@@ -71,7 +71,7 @@
 | grade | INT | NOT NULL | 학년 |
 | class_no | INT | NOT NULL | 반 |
 | day | VARCHAR(10) | NOT NULL | 요일 (`월요일` 등) |
-| period | INT | NOT NULL | 교시 |
+| period | INT | NOT NULL, CHECK 1~7 | 교시 |
 | label | VARCHAR(80) | NOT NULL | 선택 전 또는 고정 슬롯에 표시할 이름 |
 | tag | VARCHAR(30) | NULL | 선택 과목과 연결할 태그. NULL이면 고정 슬롯 |
 | course_id | INT | NULL, FOREIGN KEY | 고정 슬롯에 직접 연결된 과목 ID. 선택 슬롯이면 NULL |
