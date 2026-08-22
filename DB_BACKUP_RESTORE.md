@@ -68,4 +68,3 @@ docker exec highlog-mysql sh -c 'MYSQL_PWD="$MYSQL_PASSWORD" mysql -u"$MYSQL_USE
 - 테이블 및 주요 행 개수
 - 로그인·시간표 기능 확인 결과
 - 담당자와 발견된 문제
-

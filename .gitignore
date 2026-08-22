@@ -7,3 +7,6 @@ package-lock.json
 .vscode/
 scripts/
 migrations/
+
+.lab/
+sql/legacy/
