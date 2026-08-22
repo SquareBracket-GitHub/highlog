@@ -1,9 +1,9 @@
--- 학생이 직접 입력하는 개인 시간표입니다.
--- 기존 courses, enrolments, class_timetable_slots 구조와 의도적으로 연결하지 않습니다.
+-- Personal timetable entries entered by each student.
+-- This table is intentionally independent from courses and class timetable slots.
 CREATE TABLE IF NOT EXISTS personal_timetable_entries (
     id INT AUTO_INCREMENT PRIMARY KEY,
     student_id INT NOT NULL,
-    day ENUM('월', '화', '수', '목', '금') NOT NULL,
+    day VARCHAR(10) NOT NULL,
     period TINYINT NOT NULL,
     subject_name VARCHAR(80) NOT NULL,
     class_name VARCHAR(50) NOT NULL,
@@ -19,4 +19,4 @@ CREATE TABLE IF NOT EXISTS personal_timetable_entries (
 ) ENGINE = InnoDB
   DEFAULT CHARACTER SET = utf8mb4
   COLLATE = utf8mb4_unicode_ci
-  COMMENT = '학생 직접 입력 개인 시간표';
+  COMMENT = 'Student-managed personal timetable';
