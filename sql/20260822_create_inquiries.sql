@@ -10,6 +10,7 @@ CREATE TABLE IF NOT EXISTS inquiries (
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     responded_at TIMESTAMP NULL,
+    student_read_at TIMESTAMP NULL,
     INDEX idx_inquiries_student (student_id, created_at),
     INDEX idx_inquiries_admin_queue (status, created_at),
     CONSTRAINT fk_inquiry_student FOREIGN KEY (student_id) REFERENCES students (id) ON DELETE CASCADE,

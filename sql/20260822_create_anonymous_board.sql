@@ -53,14 +53,32 @@ CREATE TABLE IF NOT EXISTS anonymous_comments (
     CONSTRAINT fk_anonymous_comment_deleting_admin FOREIGN KEY (deleted_by_admin_id) REFERENCES students (id) ON DELETE SET NULL
 ) ENGINE = InnoDB DEFAULT CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci;
 
+CREATE TABLE IF NOT EXISTS board_reports (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    reporter_student_id INT NOT NULL,
+    target_type ENUM('post', 'comment') NOT NULL,
+    target_id BIGINT NOT NULL,
+    reason VARCHAR(500) NOT NULL,
+    status ENUM('pending', 'resolved', 'dismissed') NOT NULL DEFAULT 'pending',
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    reviewed_at TIMESTAMP NULL,
+    reviewed_by_admin_id INT NULL,
+    UNIQUE KEY uq_board_reporter_target (reporter_student_id, target_type, target_id),
+    INDEX idx_board_reports_queue (status, created_at),
+    CONSTRAINT fk_board_reporter FOREIGN KEY (reporter_student_id) REFERENCES students (id) ON DELETE CASCADE,
+    CONSTRAINT fk_board_report_reviewer FOREIGN KEY (reviewed_by_admin_id) REFERENCES students (id) ON DELETE SET NULL
+) ENGINE = InnoDB DEFAULT CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci;
+
 CREATE TABLE IF NOT EXISTS board_admin_audit_logs (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     admin_student_id INT NOT NULL,
-    action ENUM('VIEW_POST_AUTHOR', 'DELETE_POST', 'DELETE_COMMENT', 'APPROVE_MEMBER', 'REJECT_MEMBER', 'SUSPEND_MEMBER') NOT NULL,
+    action ENUM('VIEW_POST_AUTHOR', 'DELETE_POST', 'DELETE_COMMENT', 'APPROVE_MEMBER', 'REJECT_MEMBER', 'SUSPEND_MEMBER', 'RESTORE_MEMBER') NOT NULL,
     target_type ENUM('post', 'comment', 'student') NOT NULL,
     target_id BIGINT NOT NULL,
+    report_id BIGINT NULL,
     reason VARCHAR(200) NULL,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     INDEX idx_board_admin_audit_admin (admin_student_id, created_at),
-    CONSTRAINT fk_board_audit_admin FOREIGN KEY (admin_student_id) REFERENCES students (id) ON DELETE RESTRICT
+    CONSTRAINT fk_board_audit_admin FOREIGN KEY (admin_student_id) REFERENCES students (id) ON DELETE RESTRICT,
+    CONSTRAINT fk_board_audit_report FOREIGN KEY (report_id) REFERENCES board_reports (id) ON DELETE SET NULL
 ) ENGINE = InnoDB DEFAULT CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci;

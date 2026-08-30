@@ -1,8 +1,19 @@
 -- Highlog complete database DDL for MySQL 8.0 or later.
--- This single file includes accounts, legacy courses, personal timetables,
--- terms consent, anonymous board membership, posts, comments, and audit logs.
--- It also includes user inquiries and administrator responses.
--- Run this file for a new database. Do not run the separate migration files afterward.
+-- This is the single source of truth for a new Highlog database.
+-- It contains all 12 tables, constraints, indexes, triggers, and administrator setup guidance.
+--
+-- Integrated SQL history:
+--   migrations/20260818_limit_periods_to_7.sql
+--   backend/migrations/2026-08-18-add-course-ownership.sql
+--   backend/migrations/2026-08-18-enforce-slot-scope-conflicts.sql
+--   sql/20260822_create_personal_timetable_entries.sql
+--   sql/20260822_create_anonymous_board.sql
+--   sql/20260822_create_inquiries.sql
+--   sql/20260830_add_board_reports_membership_controls_and_inquiry_reads.sql
+--   sql/create_admin.sql (setup guidance only)
+--
+-- For a new database, run only this file. Do not run any migration file afterward.
+-- Migration files remain available only for updating an existing database.
 
 -- utf8mb4 remains enabled so application data can contain any Unicode text.
 CREATE DATABASE IF NOT EXISTS highlog
@@ -203,16 +214,34 @@ CREATE TABLE IF NOT EXISTS anonymous_comments (
     CONSTRAINT fk_anonymous_comment_deleting_admin FOREIGN KEY (deleted_by_admin_id) REFERENCES students (id) ON DELETE SET NULL
 ) ENGINE = InnoDB DEFAULT CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci;
 
+CREATE TABLE IF NOT EXISTS board_reports (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    reporter_student_id INT NOT NULL,
+    target_type ENUM('post', 'comment') NOT NULL,
+    target_id BIGINT NOT NULL,
+    reason VARCHAR(500) NOT NULL,
+    status ENUM('pending', 'resolved', 'dismissed') NOT NULL DEFAULT 'pending',
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    reviewed_at TIMESTAMP NULL,
+    reviewed_by_admin_id INT NULL,
+    UNIQUE KEY uq_board_reporter_target (reporter_student_id, target_type, target_id),
+    INDEX idx_board_reports_queue (status, created_at),
+    CONSTRAINT fk_board_reporter FOREIGN KEY (reporter_student_id) REFERENCES students (id) ON DELETE CASCADE,
+    CONSTRAINT fk_board_report_reviewer FOREIGN KEY (reviewed_by_admin_id) REFERENCES students (id) ON DELETE SET NULL
+) ENGINE = InnoDB DEFAULT CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci;
+
 CREATE TABLE IF NOT EXISTS board_admin_audit_logs (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     admin_student_id INT NOT NULL,
-    action ENUM('VIEW_POST_AUTHOR', 'DELETE_POST', 'DELETE_COMMENT', 'APPROVE_MEMBER', 'REJECT_MEMBER', 'SUSPEND_MEMBER') NOT NULL,
+    action ENUM('VIEW_POST_AUTHOR', 'DELETE_POST', 'DELETE_COMMENT', 'APPROVE_MEMBER', 'REJECT_MEMBER', 'SUSPEND_MEMBER', 'RESTORE_MEMBER') NOT NULL,
     target_type ENUM('post', 'comment', 'student') NOT NULL,
     target_id BIGINT NOT NULL,
+    report_id BIGINT NULL,
     reason VARCHAR(200) NULL,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     INDEX idx_board_admin_audit_admin (admin_student_id, created_at),
-    CONSTRAINT fk_board_audit_admin FOREIGN KEY (admin_student_id) REFERENCES students (id) ON DELETE RESTRICT
+    CONSTRAINT fk_board_audit_admin FOREIGN KEY (admin_student_id) REFERENCES students (id) ON DELETE RESTRICT,
+    CONSTRAINT fk_board_audit_report FOREIGN KEY (report_id) REFERENCES board_reports (id) ON DELETE SET NULL
 ) ENGINE = InnoDB DEFAULT CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS inquiries (
@@ -226,6 +255,7 @@ CREATE TABLE IF NOT EXISTS inquiries (
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     responded_at TIMESTAMP NULL,
+    student_read_at TIMESTAMP NULL,
     INDEX idx_inquiries_student (student_id, created_at),
     INDEX idx_inquiries_admin_queue (status, created_at),
     CONSTRAINT fk_inquiry_student FOREIGN KEY (student_id) REFERENCES students (id) ON DELETE CASCADE,
@@ -236,4 +266,6 @@ CREATE TABLE IF NOT EXISTS inquiries (
 -- 1. Create the account through the normal application registration flow first.
 -- 2. Replace the value below with that account's login ID and execute the UPDATE.
 -- UPDATE students SET is_admin = TRUE WHERE login_id = 'replace-with-admin-login-id';
--- SELECT id, username, login_id, is_admin FROM students WHERE login_id = 'replace-with-admin-login-id';
+-- SELECT id, username, login_id, grade, class_no, school_number, is_admin
+-- FROM students
+-- WHERE login_id = 'replace-with-admin-login-id';
